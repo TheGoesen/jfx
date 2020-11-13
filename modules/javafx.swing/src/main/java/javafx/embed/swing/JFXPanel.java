@@ -25,45 +25,7 @@
 
 package javafx.embed.swing;
 
-import java.awt.AlphaComposite;
-import java.awt.AWTEvent;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.KeyboardFocusManager;
-import java.awt.Point;
-import java.awt.Window;
-import java.awt.Insets;
-import java.awt.EventQueue;
-import java.awt.SecondaryLoop;
-import java.awt.event.AWTEventListener;
-import java.awt.event.ComponentEvent;
-import java.awt.event.FocusEvent;
-import java.awt.event.HierarchyEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.InputMethodEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusListener;
-import java.awt.im.InputMethodRequests;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.awt.datatransfer.Clipboard;
-import java.nio.IntBuffer;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.concurrent.CountDownLatch;
-
-import javafx.application.Platform;
-import javafx.scene.Scene;
-
-import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
-
+import com.sun.javafx.PlatformUtil;
 import com.sun.javafx.application.PlatformImpl;
 import com.sun.javafx.cursor.CursorFrame;
 import com.sun.javafx.embed.AbstractEvents;
@@ -72,11 +34,8 @@ import com.sun.javafx.embed.EmbeddedStageInterface;
 import com.sun.javafx.embed.HostInterface;
 import com.sun.javafx.stage.EmbeddedWindow;
 import com.sun.javafx.tk.Toolkit;
-import com.sun.javafx.PlatformUtil;
-import java.awt.event.InvocationEvent;
-
-import java.lang.reflect.Method;
-import java.util.concurrent.atomic.AtomicInteger;
+import javafx.application.Platform;
+import javafx.scene.Scene;
 import sun.awt.AppContext;
 import sun.awt.SunToolkit;
 import sun.java2d.SunGraphics2D;
@@ -84,8 +43,19 @@ import sun.java2d.SurfaceData;
 import sun.util.logging.PlatformLogger;
 import sun.util.logging.PlatformLogger.Level;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.im.InputMethodRequests;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
+import java.nio.IntBuffer;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
-* {@code JFXPanel} is a component to embed JavaFX content into
+ * {@code JFXPanel} is a component to embed JavaFX content into
  * Swing applications. The content to be displayed is specified
  * with the {@link #setScene} method that accepts an instance of
  * JavaFX {@code Scene}. After the scene is assigned, it gets
@@ -192,9 +162,12 @@ public class JFXPanel extends JComponent {
         }
         // Need to install a finish listener to catch calls to Platform.exit
         finishListener = new PlatformImpl.FinishListener() {
-            @Override public void idle(boolean implicitExit) {
+            @Override
+            public void idle(boolean implicitExit) {
             }
-            @Override public void exitCalled() {
+
+            @Override
+            public void exitCalled() {
             }
         };
         PlatformImpl.addListener(finishListener);
@@ -216,15 +189,16 @@ public class JFXPanel extends JComponent {
             return;
         }
         EventQueue eventQueue = AccessController.doPrivileged(
-                                (PrivilegedAction<EventQueue>) java.awt.Toolkit
-                                .getDefaultToolkit()::getSystemEventQueue);
+                (PrivilegedAction<EventQueue>) java.awt.Toolkit
+                        .getDefaultToolkit()::getSystemEventQueue);
         if (eventQueue.isDispatchThread()) {
             // We won't block EDT by FX initialization
             SecondaryLoop secondaryLoop = eventQueue.createSecondaryLoop();
             final Throwable[] th = {null};
             new Thread(() -> {
                 try {
-                    PlatformImpl.startup(() -> {});
+                    PlatformImpl.startup(() -> {
+                    });
                 } catch (Throwable t) {
                     th[0] = t;
                 } finally {
@@ -241,7 +215,8 @@ public class JFXPanel extends JComponent {
                 throw new RuntimeException("FX initialization failed", th[0]);
             }
         } else {
-            PlatformImpl.startup(() -> {});
+            PlatformImpl.startup(() -> {
+            });
         }
         fxInitialized = true;
     }
@@ -255,21 +230,17 @@ public class JFXPanel extends JComponent {
      */
     public JFXPanel() {
         super();
-
         initFx();
-
         hostContainer = new HostContainer();
-
         enableEvents(InputEvent.COMPONENT_EVENT_MASK |
-                     InputEvent.FOCUS_EVENT_MASK |
-                     InputEvent.HIERARCHY_BOUNDS_EVENT_MASK |
-                     InputEvent.HIERARCHY_EVENT_MASK |
-                     InputEvent.MOUSE_EVENT_MASK |
-                     InputEvent.MOUSE_MOTION_EVENT_MASK |
-                     InputEvent.MOUSE_WHEEL_EVENT_MASK |
-                     InputEvent.KEY_EVENT_MASK |
-                     InputEvent.INPUT_METHOD_EVENT_MASK);
-
+                InputEvent.FOCUS_EVENT_MASK |
+                InputEvent.HIERARCHY_BOUNDS_EVENT_MASK |
+                InputEvent.HIERARCHY_EVENT_MASK |
+                InputEvent.MOUSE_EVENT_MASK |
+                InputEvent.MOUSE_MOTION_EVENT_MASK |
+                InputEvent.MOUSE_WHEEL_EVENT_MASK |
+                InputEvent.KEY_EVENT_MASK |
+                InputEvent.INPUT_METHOD_EVENT_MASK);
         setFocusable(true);
         setFocusTraversalKeysEnabled(false);
     }
@@ -289,7 +260,6 @@ public class JFXPanel extends JComponent {
      * dispatch thread or the JavaFX application thread.
      *
      * @param newScene a scene to display in this {@code JFXpanel}
-     *
      * @see java.awt.EventQueue#isDispatchThread()
      * @see javafx.application.Platform#isFxApplicationThread()
      */
@@ -364,16 +334,14 @@ public class JFXPanel extends JComponent {
         if (scenePeer == null || !isFxEnabled()) {
             return;
         }
-
         // FX only supports 3 buttons so don't send the event for other buttons
         switch (e.getID()) {
             case MouseEvent.MOUSE_DRAGGED:
             case MouseEvent.MOUSE_PRESSED:
             case MouseEvent.MOUSE_RELEASED:
-                if (e.getButton() > 3)  return;
+                if (e.getButton() > 3) return;
                 break;
         }
-
         int extModifiers = e.getModifiersEx();
         // Fix for RT-15457: we should report no mouse button upon mouse release, so
         // *BtnDown values are calculated based on extMofifiers, not e.getButton()
@@ -402,8 +370,7 @@ public class JFXPanel extends JComponent {
         if (e.getID() == MouseEvent.MOUSE_PRESSED || e.getID() == MouseEvent.MOUSE_RELEASED) {
             popupTrigger = e.isPopupTrigger();
         }
-
-        if(e.getID() == MouseEvent.MOUSE_WHEEL) {
+        if (e.getID() == MouseEvent.MOUSE_WHEEL) {
             scenePeer.scrollEvent(AbstractEvents.MOUSEEVENT_VERTICAL_WHEEL,
                     0, -SwingEvents.getWheelRotation(e),
                     0, 0, // total scroll
@@ -441,7 +408,7 @@ public class JFXPanel extends JComponent {
     @Override
     protected void processMouseEvent(MouseEvent e) {
         if ((e.getID() == MouseEvent.MOUSE_PRESSED) &&
-            (e.getButton() == MouseEvent.BUTTON1)) {
+                (e.getButton() == MouseEvent.BUTTON1)) {
             if (!hasFocus()) {
                 requestFocus();
                 // this focus request event goes to eventqueue and will be
@@ -456,7 +423,6 @@ public class JFXPanel extends JComponent {
                 }
             }
         }
-
         sendMouseEventToFX(e);
         super.processMouseEvent(e);
     }
@@ -492,11 +458,9 @@ public class JFXPanel extends JComponent {
         if (scenePeer == null || !isFxEnabled()) {
             return;
         }
-
         char[] chars = (e.getKeyChar() == KeyEvent.CHAR_UNDEFINED)
-                       ? new char[] {}
-                       : new char[] { SwingEvents.keyCharToEmbedKeyChar(e.getKeyChar()) };
-
+                ? new char[]{}
+                : new char[]{SwingEvents.keyCharToEmbedKeyChar(e.getKeyChar())};
         scenePeer.keyEvent(
                 SwingEvents.keyIDToEmbedKeyType(e.getID()),
                 e.getKeyCode(), chars,
@@ -576,12 +540,11 @@ public class JFXPanel extends JComponent {
             newScaleFactorY = sd.getDefaultScaleY();
         }
         if (oldWidth != pWidth || oldHeight != pHeight ||
-            newScaleFactorX != scaleFactorX || newScaleFactorY != scaleFactorY)
-        {
+                newScaleFactorX != scaleFactorX || newScaleFactorY != scaleFactorY) {
             createResizePixelBuffer(newScaleFactorX, newScaleFactorY);
             if (scenePeer != null) {
                 scenePeer.setPixelScaleFactors((float) newScaleFactorX,
-                                               (float) newScaleFactorY);
+                        (float) newScaleFactorY);
             }
             scaleFactorX = newScaleFactorX;
             scaleFactorY = newScaleFactorY;
@@ -606,7 +569,6 @@ public class JFXPanel extends JComponent {
         if (stagePeer == null) {
             return;
         }
-
         stagePeer.setLocation(screenX, screenY);
     }
 
@@ -643,11 +605,9 @@ public class JFXPanel extends JComponent {
         if ((stage == null) || (stagePeer == null) || !isFxEnabled()) {
             return;
         }
-
         boolean focused = (e.getID() == FocusEvent.FOCUS_GAINED);
         int focusCause = (focused ? AbstractEvents.FOCUSEVENT_ACTIVATED :
-                                      AbstractEvents.FOCUSEVENT_DEACTIVATED);
-
+                AbstractEvents.FOCUSEVENT_DEACTIVATED);
         if (focused) {
             if (e.getCause() == FocusEvent.Cause.TRAVERSAL_FORWARD) {
                 focusCause = AbstractEvents.FOCUSEVENT_TRAVERSED_FORWARD;
@@ -681,15 +641,14 @@ public class JFXPanel extends JComponent {
             int newPixelW = (int) Math.ceil(pWidth * newScaleFactorX);
             int newPixelH = (int) Math.ceil(pHeight * newScaleFactorY);
             pixelsIm = new BufferedImage(newPixelW, newPixelH,
-                                         SwingFXUtils.getBestBufferedImageType(
-                                             scenePeer.getPixelFormat(), null, false));
+                    SwingFXUtils.getBestBufferedImageType(
+                            scenePeer.getPixelFormat(), null, false));
             if (oldIm != null) {
                 double ratioX = newScaleFactorX / scaleFactorX;
                 double ratioY = newScaleFactorY / scaleFactorY;
                 // Transform old size to the new coordinate space.
-                int oldW = (int)Math.round(oldIm.getWidth() * ratioX);
-                int oldH = (int)Math.round(oldIm.getHeight() * ratioY);
-
+                int oldW = (int) Math.round(oldIm.getWidth() * ratioX);
+                int oldH = (int) Math.round(oldIm.getHeight() * ratioY);
                 Graphics g = pixelsIm.getGraphics();
                 try {
                     g.drawImage(oldIm, 0, 0, oldW, oldH, null);
@@ -710,7 +669,6 @@ public class JFXPanel extends JComponent {
 
     private void sendInputMethodEventToFX(InputMethodEvent e) {
         String t = InputMethodSupport.getTextForEvent(e);
-
         int insertionIndex = 0;
         if (e.getCaret() != null) {
             insertionIndex = e.getCaret().getInsertionIndex();
@@ -728,7 +686,6 @@ public class JFXPanel extends JComponent {
      * {@code JFXpanel}.
      *
      * @param g the Graphics context in which to paint
-     *
      * @see #isOpaque()
      */
     @Override
@@ -742,18 +699,17 @@ public class JFXPanel extends JComponent {
                 return;
             }
         }
-        DataBufferInt dataBuf = (DataBufferInt)pixelsIm.getRaster().getDataBuffer();
+        DataBufferInt dataBuf = (DataBufferInt) pixelsIm.getRaster().getDataBuffer();
         int[] pixelsData = dataBuf.getData();
         IntBuffer buf = IntBuffer.wrap(pixelsData);
         if (!scenePeer.getPixels(buf, pWidth, pHeight)) {
             // In this case we just render what we have so far in the buffer.
         }
-
         Graphics gg = null;
         try {
             gg = g.create();
             if ((opacity < 1.0f) && (gg instanceof Graphics2D)) {
-                Graphics2D g2d = (Graphics2D)gg;
+                Graphics2D g2d = (Graphics2D) gg;
                 AlphaComposite c = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity);
                 g2d.setComposite(c);
             }
@@ -762,11 +718,10 @@ public class JFXPanel extends JComponent {
                 gg.translate(i.left, i.top);
             }
             gg.drawImage(pixelsIm, 0, 0, pWidth, pHeight, null);
-
             double newScaleFactorX = scaleFactorX;
             double newScaleFactorY = scaleFactorY;
             if (g instanceof SunGraphics2D) {
-                SurfaceData sd = ((SunGraphics2D)g).surfaceData;
+                SurfaceData sd = ((SunGraphics2D) g).surfaceData;
                 newScaleFactorX = sd.getDefaultScaleX();
                 newScaleFactorY = sd.getDefaultScaleY();
             }
@@ -774,7 +729,7 @@ public class JFXPanel extends JComponent {
                 createResizePixelBuffer(newScaleFactorX, newScaleFactorY);
                 // The scene will request repaint.
                 scenePeer.setPixelScaleFactors((float) newScaleFactorX,
-                                               (float) newScaleFactorY);
+                        (float) newScaleFactorY);
                 scaleFactorX = newScaleFactorX;
                 scaleFactorY = newScaleFactorY;
             }
@@ -827,7 +782,7 @@ public class JFXPanel extends JComponent {
         }
     }
 
-    private transient  AWTEventListener ungrabListener = event -> {
+    private transient AWTEventListener ungrabListener = event -> {
         if (event instanceof sun.awt.UngrabEvent) {
             SwingFXUtils.runOnFxThread(() -> {
                 if (JFXPanel.this.stagePeer != null &&
@@ -843,9 +798,9 @@ public class JFXPanel extends JComponent {
             // that contains the JFXPanel.
             if (event.getID() == MouseEvent.MOUSE_PRESSED && event.getSource() instanceof Component) {
                 final Window jfxPanelWindow = SwingUtilities.getWindowAncestor(JFXPanel.this);
-                final Component source = (Component)event.getSource();
-                final Window eventWindow = source instanceof Window ? (Window)source : SwingUtilities.getWindowAncestor(source);
-
+                final Component source = (Component) event.getSource();
+                final Window eventWindow = source instanceof Window ? (Window) source : SwingUtilities.getWindowAncestor(
+                        source);
                 if (jfxPanelWindow == eventWindow) {
                     SwingFXUtils.runOnFxThread(() -> {
                         if (JFXPanel.this.stagePeer != null) {
@@ -872,21 +827,20 @@ public class JFXPanel extends JComponent {
     @Override
     public void addNotify() {
         super.addNotify();
-
         registerFinishListener();
-
         AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
             JFXPanel.this.getToolkit().addAWTEventListener(ungrabListener,
-                SunToolkit.GRAB_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
+                    SunToolkit.GRAB_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
             return null;
         });
         updateComponentSize(); // see RT-23603
         SwingFXUtils.runOnFxThread(() -> {
             if ((stage != null) && !stage.isShowing()) {
                 stage.show();
-                sendMoveEventToFX();
+                invokeOnClientEDT(this::sendMoveEventToFX);
             }
         });
+
     }
 
     @Override
@@ -903,19 +857,17 @@ public class JFXPanel extends JComponent {
      * When this method is invoked, any KeyboardActions set up in the the
      * chain of parent components are removed.
      */
-    @Override public void removeNotify() {
+    @Override
+    public void removeNotify() {
         SwingFXUtils.runOnFxThread(() -> {
             if ((stage != null) && stage.isShowing()) {
                 stage.hide();
             }
         });
-
         pixelsIm = null;
         pWidth = 0;
         pHeight = 0;
-
         super.removeNotify();
-
         AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
             JFXPanel.this.getToolkit().removeAWTEventListener(ungrabListener);
             return null;
@@ -923,7 +875,6 @@ public class JFXPanel extends JComponent {
 
         /* see CR 4867453 */
         getInputContext().removeNotify(this);
-
         deregisterFinishListener();
     }
 
@@ -940,42 +891,39 @@ public class JFXPanel extends JComponent {
 
         @Override
         public void setEmbeddedStage(EmbeddedStageInterface embeddedStage) {
-            stagePeer = embeddedStage;
-            if (stagePeer == null) {
-                return;
-            }
-            if (pWidth > 0 && pHeight > 0) {
-                stagePeer.setSize(pWidth, pHeight);
-            }
             invokeOnClientEDT(() -> {
+                stagePeer = embeddedStage;
+                if (stagePeer == null) {
+                    return;
+                }
+                if (pWidth > 0 && pHeight > 0) {
+                    stagePeer.setSize(pWidth, pHeight);
+                }
                 if (stagePeer != null && JFXPanel.this.isFocusOwner()) {
                     stagePeer.setFocused(true, AbstractEvents.FOCUSEVENT_ACTIVATED);
                 }
+                sendMoveEventToFX();
             });
-            sendMoveEventToFX();
         }
 
         @Override
         public void setEmbeddedScene(EmbeddedSceneInterface embeddedScene) {
-            if (scenePeer == embeddedScene) {
-                return;
-            }
-            scenePeer = embeddedScene;
-            if (scenePeer == null) {
-                invokeOnClientEDT(() -> {
+            invokeOnClientEDT(() -> {
+                if (scenePeer == embeddedScene) {
+                    return;
+                }
+                scenePeer = embeddedScene;
+                if (scenePeer == null) {
                     if (dnd != null) {
                         dnd.removeNotify();
                         dnd = null;
                     }
-                });
-                return;
-            }
-            if (pWidth > 0 && pHeight > 0) {
-                scenePeer.setSize(pWidth, pHeight);
-            }
-            scenePeer.setPixelScaleFactors((float) scaleFactorX, (float) scaleFactorY);
-
-            invokeOnClientEDT(() -> {
+                    return;
+                }
+                if (pWidth > 0 && pHeight > 0) {
+                    scenePeer.setSize(pWidth, pHeight);
+                }
+                scenePeer.setPixelScaleFactors((float) scaleFactorX, (float) scaleFactorY);
                 dnd = new SwingDnD(JFXPanel.this, scenePeer);
                 dnd.addNotify();
                 if (scenePeer != null) {
@@ -1036,12 +984,10 @@ public class JFXPanel extends JComponent {
                 // platform cursor already cached
                 return cachedPlatformCursor;
             }
-
             // platform cursor not cached yet
             final Cursor platformCursor =
                     SwingCursors.embedCursorToCursor(cursorFrame);
             cursorFrame.setPlatforCursor(Cursor.class, platformCursor);
-
             return platformCursor;
         }
 
@@ -1050,16 +996,14 @@ public class JFXPanel extends JComponent {
             // On X11 grab is limited to a single XDisplay connection,
             // so we can't delegate it to another GUI toolkit.
             if (PlatformUtil.isLinux()) return true;
-
             invokeOnClientEDT(() -> {
                 Window window = SwingUtilities.getWindowAncestor(JFXPanel.this);
                 if (window != null) {
                     if (JFXPanel.this.getToolkit() instanceof SunToolkit) {
-                        ((SunToolkit)JFXPanel.this.getToolkit()).grab(window);
+                        ((SunToolkit) JFXPanel.this.getToolkit()).grab(window);
                     }
                 }
             });
-
             return true; // Oh, well...
         }
 
@@ -1068,12 +1012,11 @@ public class JFXPanel extends JComponent {
             // On X11 grab is limited to a single XDisplay connection,
             // so we can't delegate it to another GUI toolkit.
             if (PlatformUtil.isLinux()) return;
-
             invokeOnClientEDT(() -> {
                 Window window = SwingUtilities.getWindowAncestor(JFXPanel.this);
                 if (window != null) {
                     if (JFXPanel.this.getToolkit() instanceof SunToolkit) {
-                        ((SunToolkit)JFXPanel.this.getToolkit()).ungrab(window);
+                        ((SunToolkit) JFXPanel.this.getToolkit()).ungrab(window);
                     }
                 }
             });
