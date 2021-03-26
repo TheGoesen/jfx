@@ -25,59 +25,34 @@
 
 package javafx.embed.swing;
 
-import java.awt.AlphaComposite;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.KeyboardFocusManager;
-import java.awt.Point;
-import java.awt.Window;
-import java.awt.Insets;
-import java.awt.EventQueue;
-import java.awt.SecondaryLoop;
-import java.awt.GraphicsEnvironment;
-import java.awt.event.AWTEventListener;
-import java.awt.event.ComponentEvent;
-import java.awt.event.FocusEvent;
-import java.awt.event.HierarchyEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.InputMethodEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.InvocationEvent;
-import java.awt.im.InputMethodRequests;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.nio.IntBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
-
-import javafx.application.Platform;
-import javafx.scene.Scene;
-
+import com.sun.javafx.PlatformUtil;
 import com.sun.javafx.application.PlatformImpl;
 import com.sun.javafx.cursor.CursorFrame;
-import com.sun.javafx.stage.EmbeddedWindow;
-import com.sun.javafx.tk.Toolkit;
-import com.sun.javafx.PlatformUtil;
-
-import com.sun.javafx.logging.PlatformLogger;
 import com.sun.javafx.embed.AbstractEvents;
 import com.sun.javafx.embed.EmbeddedSceneInterface;
 import com.sun.javafx.embed.EmbeddedStageInterface;
 import com.sun.javafx.embed.HostInterface;
-
+import com.sun.javafx.embed.swing.SwingCursors;
 import com.sun.javafx.embed.swing.SwingDnD;
 import com.sun.javafx.embed.swing.SwingEvents;
-import com.sun.javafx.embed.swing.SwingCursors;
 import com.sun.javafx.embed.swing.SwingNodeHelper;
 import com.sun.javafx.embed.swing.newimpl.JFXPanelInteropN;
+import com.sun.javafx.logging.PlatformLogger;
+import com.sun.javafx.stage.EmbeddedWindow;
+import com.sun.javafx.tk.Toolkit;
+import javafx.application.Platform;
+import javafx.scene.Scene;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.im.InputMethodRequests;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
+import java.nio.IntBuffer;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
 * {@code JFXPanel} is a component to embed JavaFX content into
@@ -943,29 +918,26 @@ public class JFXPanel extends JComponent {
 
         @Override
         public void setEmbeddedStage(EmbeddedStageInterface embeddedStage) {
-            stagePeer = embeddedStage;
-            if (stagePeer == null) {
-                return;
-            }
-            if (pWidth > 0 && pHeight > 0) {
-                stagePeer.setSize(pWidth, pHeight);
-            }
             invokeOnClientEDT(() -> {
+                stagePeer = embeddedStage;
                 if (stagePeer != null && JFXPanel.this.isFocusOwner()) {
                     stagePeer.setFocused(true, AbstractEvents.FOCUSEVENT_ACTIVATED);
                 }
             });
+            if (embeddedStage == null) {
+                return;
+            }
+            if (pWidth > 0 && pHeight > 0) {
+                embeddedStage.setSize(pWidth, pHeight);
+            }
             sendMoveEventToFX();
         }
 
         @Override
         public void setEmbeddedScene(EmbeddedSceneInterface embeddedScene) {
-            if (scenePeer == embeddedScene) {
-                return;
-            }
-            scenePeer = embeddedScene;
-            if (scenePeer == null) {
+            if (embeddedScene == null) {
                 invokeOnClientEDT(() -> {
+                    scenePeer = null;
                     if (dnd != null) {
                         dnd.removeNotify();
                         dnd = null;
@@ -973,12 +945,15 @@ public class JFXPanel extends JComponent {
                 });
                 return;
             }
-            if (pWidth > 0 && pHeight > 0) {
-                scenePeer.setSize(pWidth, pHeight);
-            }
-            scenePeer.setPixelScaleFactors((float) scaleFactorX, (float) scaleFactorY);
-
             invokeOnClientEDT(() -> {
+                if (embeddedScene == scenePeer) {
+                    return;
+                }
+                scenePeer = embeddedScene;
+                if (pWidth > 0 && pHeight > 0) {
+                    embeddedScene.setSize(pWidth, pHeight);
+                }
+                embeddedScene.setPixelScaleFactors((float) scaleFactorX, (float) scaleFactorY);
                 dnd = new SwingDnD(JFXPanel.this, scenePeer);
                 dnd.addNotify();
                 if (scenePeer != null) {
